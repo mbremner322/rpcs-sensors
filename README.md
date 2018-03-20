@@ -6,6 +6,6 @@
     1. Install Adafruit SAMD Boards by Adafruit in Boards Manager
 
 #    References
-    * [https://learn.adafruit.com/add-boards-arduino-v164/setup](https://learn.adafruit.com/add-boards-arduino-v164/setup)
-    * [https://learn.adafruit.com/adafruit-feather-m0-basic-proto/using-wi    th-arduino-ide](https://learn.adafruit.com/adafruit-feather-m0-basic-proto/using-with-arduino-ide)
+     [https://learn.adafruit.com/add-boards-arduino-v164/setup](https://learn.adafruit.com/add-boards-arduino-v164/setup)
+     [https://learn.adafruit.com/adafruit-feather-m0-basic-proto/using-wi    th-arduino-ide](https://learn.adafruit.com/adafruit-feather-m0-basic-proto/using-with-arduino-ide)
 
