@@ -120,8 +120,12 @@ void setup() {
 
 
 void loop() {
+    
+    int c;
     int16_t ax, ay, az;
     int16_t gx, gy, gz;
+
+    while( !ble.available() );
     /**
     StaticJsonBuffer<200> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();

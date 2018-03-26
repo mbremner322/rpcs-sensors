@@ -1,0 +1,38 @@
+Accels
+
+Sensor 1:
+    VCC -> uCtrl 3v
+    GND -> uCtrl GND
+    SCL -> uCtrl SCL
+    SDA -> uCtrl SDA
+    AD0 -> uCtrl pin#5
+
+Sensor 2:
+    VCC -> uCtrl 3v
+    GND -> uCtrl GND
+    SCL -> uCtrl SCL
+    SDA -> uCtrl SDA
+    AD0 -> uCtrl pin#6
+
+Sensor 3:
+    VCC -> uCtrl 3v
+    GND -> uCtrl GND
+    SCL -> uCtrl SCL
+    SDA -> uCtrl SDA
+    AD0 -> uCtrl pin#10
+
+Sensor 4:
+    VCC -> uCtrl 3v
+    GND -> uCtrl GND
+    SCL -> uCtrl SCL
+    SDA -> uCtrl SDA
+    AD0 -> uCtrl pin#11
+
+Temp/Hum
+
+    VCC -> uCtrl 3v
+    GND -> uCtrl GND
+    SCL -> uCtrl SCL
+    SDA -> uCtrl SDA
+
+
