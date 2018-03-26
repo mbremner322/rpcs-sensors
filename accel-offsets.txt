@@ -1,0 +1,39 @@
+offsets
+
+sensor 1
+	accx = 665
+	accy = 373
+	accz = 1845
+
+	gyrx = 105
+	gyry = 7
+	guyz = -47
+
+sensor 2 
+	accx = 2809
+	accy = -21
+	accz = 795
+	
+	gyrx = 128
+	gryy = 12
+	gryz = -20
+
+
+sensor 3 
+	accx = -1527
+	accy = 339
+	accz = 1429
+	
+	gyrx = -28
+	gryy = -5
+	gryz = -172
+
+
+sensor 4 
+	accx = -4111
+	accy = 1695
+	accz = 1059
+	
+	gyrx = -71
+	gryy = 1
+	gryz = 21
