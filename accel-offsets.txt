@@ -1,39 +1,39 @@
 offsets
 
 sensor 1
-	accx = 665
-	accy = 373
-	accz = 1845
+	accx = 665      -848
+	accy = 373      -35
+	accz = 1845     -1906
 
-	gyrx = 105
-	gyry = 7
-	guyz = -47
+	gyrx = 105      -64
+	gyry = 7        -1
+	guyz = -47      -160
 
 sensor 2 
-	accx = 2809
-	accy = -21
-	accz = 795
+	accx = 2809     -847
+	accy = -21      -35
+	accz = 795      1866
 	
-	gyrx = 128
-	gryy = 12
-	gryz = -20
+	gyrx = 128      -65
+	gryy = 12       -1
+	gryz = -20      -161
 
 
 sensor 3 
-	accx = -1527
-	accy = 339
-	accz = 1429
+	accx = -1527    -847
+	accy = 339      -33
+	accz = 1429     1872
 	
-	gyrx = -28
-	gryy = -5
-	gryz = -172
+	gyrx = -28      -66
+	gryy = -5       -1
+	gryz = -172     -161
 
 
 sensor 4 
-	accx = -4111
-	accy = 1695
-	accz = 1059
+	accx = -4111      -848
+	accy = 1695       -34
+	accz = 1059       1866
 	
-	gyrx = -71
-	gryy = 1
-	gryz = 21
+	gyrx = -71        -54
+	gryy = 1          -2
+	gryz = 21         -161
