@@ -17,10 +17,51 @@ typedef struct{
     int16_t ax, ay, az, gx, gy, gz;
 } acc_gyr_t;
 
+typedef struct{
+    int16_t ax, ay, az, gx, gy, gz;
+} calibration_t;
+
+calibration_t calibrations[NUM_AGS];
 acc_gyr_t ag_data[NUM_AGS];
 
 
 #define OUTPUT_READABLE_ACCELGYRO
+#define COMPUTE_CALIBRATION 0
+
+
+void initialize_calibration_offsets(){
+  #if COMPUTE_CALIBRATION == 1
+      
+  #elif COMPUTE_CALIBRATION == 0
+      // sensor 1
+      calibrations[0].ax = -848;
+      calibrations[0].ay = -35;
+      calibrations[0].az = -1906;
+
+      // sensor 2
+      calibrations[1].ax = -847;
+      calibrations[1].ay = -35;
+      calibrations[1].az = -1866;
+
+      // sensor 3
+      calibrations[2].ax = -847;
+      calibrations[2].ay = -33;
+      calibrations[2].az = -1872;
+
+      // sensor 4
+      calibrations[3].ax = -848;
+      calibrations[3].ay = -34;
+      calibrations[3].az = -1866;
+  #endif
+}
+
+
+void set_calibration_offsets(int i){
+    ags[i].setXAccelOffset(calibrations[i].ax);
+    ags[i].setYAccelOffset(calibrations[i].ay);
+    ags[i].setZAccelOffset(calibrations[i].az);
+}
+
 
 void setup() {
     // join I2C bus (I2Cdev library doesn't do this automatically)
@@ -31,51 +72,29 @@ void setup() {
     #endif
 
     // initialize serial communication
-    // (38400 chosen because it works as well at 8MHz as it does at 16MHz, but
-    // it's really up to you depending on your project)
     Serial.begin(9600);
     while (!Serial);
+
+    initialize_calibration_offsets();
 
     // initialize device
     Serial.println("Initializing I2C devices...");
     for (i = 0; i < NUM_AGS; i++){
         digitalWrite(pins[i], LOW);
-    
+
+        char buf[100];
+        sprintf(buf, "Initializing sensor %d connected to pin %d", i, pins[i]);
+        Serial.println(buf);
         ags[i].initialize();
-        Serial.println("range");
-        Serial.println(ags[i].getFullScaleAccelRange());
-        Serial.print("pin=");
-        Serial.print(pins[i]);
         Serial.println(ags[i].testConnection() ? " MPU6050 connection successful" : " MPU6050 connection failed");
 
-         // results from mpu_zero
-        if (i == 0){  
-            ags[0].setXAccelOffset(-848);
-            ags[0].setYAccelOffset(-35);
-            ags[0].setZAccelOffset(-1906);
-        }
-        if (i == 1){
-             ags[1].setXAccelOffset(-847);
-             ags[1].setYAccelOffset(-35);
-             ags[1].setZAccelOffset(1866);
-
-        }
-        if (i == 2){    
-            ags[2].setXAccelOffset(-847);
-            ags[2].setYAccelOffset(-33);
-            ags[2].setZAccelOffset(1872);
-        }
-        if (i == 3){    
-            ags[3].setXAccelOffset(-848);
-            ags[3].setYAccelOffset(-34);
-            ags[3].setZAccelOffset(1866);
-        }
-
+        set_calibration_offsets(i);
+        
         digitalWrite(pins[i], HIGH);
     }
-
     delay(500); 
 }
+
 
 void loop() {
     int16_t x,y,z, test;
@@ -90,7 +109,6 @@ void loop() {
         Serial.print("y=");Serial.print(y);Serial.print("\t");
         Serial.print("z=");Serial.print(z);Serial.print("\t");
         Serial.println();
- 
     }
     
 
