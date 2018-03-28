@@ -12,7 +12,7 @@
  *              Pin X1 is connected to one side of the single point sensor
  */
 
-const int MUT_GND_A_PIN = 6;
+const int MUT_GND_A_PIN = 10;
 const int MUT_ANA_A_PIN = 5;
 
 const int ANA_PIN = A0; // The pin that the first analog mutex is connected to
@@ -38,15 +38,12 @@ void loop() {
   // now connect sensor with muxes
   digitalWrite(MUT_GND_A_PIN, HIGH);
   digitalWrite(MUT_ANA_A_PIN, HIGH);
-  delay(100);
   int connected_read = analogRead(ANA_PIN);
 
   digitalWrite(MUT_GND_A_PIN, LOW);
   digitalWrite(MUT_ANA_A_PIN, LOW);
   
-  Serial.println("disconnected: " + String(disconnected_read) +
-                 "\t connected: " + String(connected_read));
-
-  delay(100);
+  Serial.println("(0, 0): " + String(disconnected_read) +
+                 "\t (0, 1): " + String(connected_read));
 
 }
