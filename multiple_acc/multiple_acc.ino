@@ -1,5 +1,6 @@
 #include "I2Cdev.h"
 #include "MPU6050.h"
+#include "Adafruit_HTU21DF.h"
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h
@@ -9,8 +10,9 @@
 
 #define NUM_AGS 4
 MPU6050 accelgyro1, accelgyro2, accelgyro3, accelgyro4;
+Adafruit_HTU21DF htu = Adafruit_HTU21DF();
 MPU6050 ags[4] = {accelgyro1, accelgyro2, accelgyro3, accelgyro4};
-int pins[4] = {5, 6, 10, 11};
+int pins[4] = {10, 11, 5, 6};
 int i;
 
 typedef struct{
@@ -31,6 +33,7 @@ acc_gyr_t ag_data[NUM_AGS];
 
 void initialize_calibration_offsets(){
   #if COMPUTE_CALIBRATION == 1
+      
       
   #elif COMPUTE_CALIBRATION == 0
       // sensor 1
@@ -77,11 +80,16 @@ void setup() {
 
     initialize_calibration_offsets();
 
+    for (i = 0; i < NUM_AGS; i++){
+        pinMode(pins[i], OUTPUT);
+        digitalWrite(pins[i], HIGH);
+    }
+
     // initialize device
     Serial.println("Initializing I2C devices...");
     for (i = 0; i < NUM_AGS; i++){
         digitalWrite(pins[i], LOW);
-
+        
         char buf[100];
         sprintf(buf, "Initializing sensor %d connected to pin %d", i, pins[i]);
         Serial.println(buf);
@@ -92,7 +100,6 @@ void setup() {
         
         digitalWrite(pins[i], HIGH);
     }
-    delay(500); 
 }
 
 
@@ -109,6 +116,9 @@ void loop() {
         Serial.print("y=");Serial.print(y);Serial.print("\t");
         Serial.print("z=");Serial.print(z);Serial.print("\t");
         Serial.println();
+
+        Serial.print("Temp: "); Serial.print(htu.readTemperature());
+        Serial.print("\t\tHum: "); Serial.println(htu.readHumidity());
     }
     
 
