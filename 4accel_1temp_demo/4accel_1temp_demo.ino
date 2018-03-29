@@ -12,6 +12,7 @@
 #define COMPUTE_CALIBRATION 0
 #define PRINT_DATA_TO_CONSOLE 1
 #define NUM_AGS 4
+#define INACTIVE_PIN_NO -1
 
 
 /**################ TYPES ######################**/
@@ -35,8 +36,9 @@ int pins[NUM_AGS] = {10, 11, 5, 6};
 void initialize_calibration_offsets(calibration_t *calibrations){
   #if COMPUTE_CALIBRATION == 1
       
-      
+  
   #elif COMPUTE_CALIBRATION == 0
+      // precomputed values from running mcu_zero
       // sensor 1
       calibrations[0].ax = -848;
       calibrations[0].ay = -35;
@@ -128,7 +130,7 @@ void setup() {
 
         // mark that this accelerometer is not connected
         if (!connection){
-           pins[i] = -1;
+           pins[i] = INACTIVE_PIN_NO;
         }
        
         set_calibration_offsets(i, calibrations[i]);
@@ -146,11 +148,13 @@ void loop() {
     
     for (i = 0; i < NUM_AGS; i++){
         // ignore inactive accelerometer
-        if (pins[i] == 0) continue;
+        if (pins[i] == INACTIVE_PIN_NO) continue;
 
+        // select this accelerometer to have slave address 0x68
         digitalWrite(pins[i], LOW);
         ags[i].getMotion6(&ag_data[i].ax, &ag_data[i].ay, &ag_data[i].az,
                                 &ag_data[i].gx, &ag_data[i].gy, &ag_data[i].gz); 
+        // deselect this accelerometer to have slave address 0x68 (back to 0x69)
         digitalWrite(pins[i], HIGH);
     }
 
