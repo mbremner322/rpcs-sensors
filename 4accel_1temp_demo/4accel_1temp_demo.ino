@@ -85,10 +85,6 @@ void set_calibration_offsets(int i, calibration_t c){
 }
 
 
-void prettyprint_data(float temp, float hum){
-    char buf[200];
-}
-
 
 void setup() {
     int i;
@@ -145,6 +141,7 @@ void loop() {
     int i;
     float temp, hum;
     ag_data_t ag_data[NUM_AGS];
+    char buf[500];
     
     for (i = 0; i < NUM_AGS; i++){
         // ignore inactive accelerometer
@@ -156,14 +153,18 @@ void loop() {
                                 &ag_data[i].gx, &ag_data[i].gy, &ag_data[i].gz); 
         // deselect this accelerometer to have slave address 0x68 (back to 0x69)
         digitalWrite(pins[i], HIGH);
+
+        // PRINT
+        sprintf(buf, "ACCELEROMETER %d : x=%d, y=%d, z=%d\n", i, ag_data[i].ax, ag_data[i].ay, ag_data[i].az);
+        Serial.println(buf);
+        
     }
 
     temp = htu.readTemperature();
     hum = htu.readHumidity();
 
-    #if PRINT_TO_CONSOLE
-    pretty_print_data(temp, hum);
-    #endif
+    sprintf(buf, "TEMPERATURE : temp=%f, hum=%f\n", temp, hum);
+    Serial.println(buf);
 
     // send over bluetooth
     
