@@ -29,12 +29,12 @@ void draw() {
         int c;
         float intensity;
         for(int i = 0; i < NUM_POINTS; i++) {
-          r = i/8;
-          c = i%8;
-          intensity = map((float)data_array[i], 0, 1023, 0, 255);
+          c = 7 - i/8;
+          r = i%8;
+          intensity = map((float)data_array[i], 200, 500, 0, 255);
           
           fill(intensity);
-          rect(c*100, r*100, 100, 100); 
+          rect(c*80, r*80, 80, 80); 
         }
       }
     }
