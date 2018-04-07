@@ -8,6 +8,16 @@
      https://learn.adafruit.com/add-boards-arduino-v164/setup
      https://learn.adafruit.com/adafruit-feather-m0-basic-proto/using-with-arduino-ide
 
+# Teensy 3.5 setup
+    1. Download Teensyduino
+       https://www.pjrc.com/teensy/td_download.html
+    1. In Arduino IDE, choose Board "Teensy 3.5"
+
 # Libraries needed
-    * https://github.com/adafruit/Adafruit_BluefruitLE_nRF51
-    * https://github.com/adafruit/Adafruit_ADXL345
+    * Bluetooth LE - Adafruit Bluefruit LE 
+      https://github.com/adafruit/Adafruit_BluefruitLE_nRF51
+    * Accelerometer - Adafruit ADXL345
+      https://github.com/adafruit/Adafruit_ADXL345
+    * IMU - Adafruit BNO055
+      https://github.com/adafruit/Adafruit_BNO055
+     
