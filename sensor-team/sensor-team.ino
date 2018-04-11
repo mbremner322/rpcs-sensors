@@ -178,7 +178,7 @@ void loop(void)
   Serial.print(" Z: ");
   Serial.print(euler.z());
   Serial.print("\t\t\n");
-  sprintf(buf, "{id=%d, x=%f, y=%f, z=%f, temp=%d}\n", count, euler.x(), euler.y(), euler.z(), bno.getTemp());
+  sprintf(buf, "{id=%d, {sensorid=, x=%f, y=%f, z=%f, temp=%d}, hum=0}\n", count, euler.x(), euler.y(), euler.z(), bno.getTemp());
 
   // Send input data to host via Bluefruit
   ble.print(buf);

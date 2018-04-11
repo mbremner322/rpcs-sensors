@@ -1,0 +1,17 @@
+BLE module
+    sck -> pin13
+    miso -> pin12
+    mosi -> pin11
+    cs -> pin9
+    irq -> pin24
+    gnd -> gnd
+    vin -> vin
+
+IMU sensor
+    scl -> pin19
+    sda -> pin18
+    gnd -> gnd
+    vin -> vin
+    adr -> gnd for 0x28 and vin for 0x29
+    
+
