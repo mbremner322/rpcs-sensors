@@ -18,6 +18,8 @@
 #define GET_B_OUTPUT(x) (((x) & 0x2) >> 1)
 #define GET_C_OUTPUT(x) (((x) & 0x4) >> 2)
 
+/** 
+//UNCOMMENT if feather m0 
 const int MUX_COL_A_PIN = 10;
 const int MUX_COL_B_PIN = 11;
 const int MUX_COL_C_PIN = 12;
@@ -25,8 +27,21 @@ const int MUX_COL_C_PIN = 12;
 const int MUX_ROW_A_PIN = 5;
 const int MUX_ROW_B_PIN = 6;
 const int MUX_ROW_C_PIN = 9;
-
 const int ANA_PIN = A0; // The pin that the first analog mutex is connected to
+**/
+
+
+//UNCOMMENT if teensy 3.5 
+const int MUX_COL_A_PIN = 4;
+const int MUX_COL_B_PIN = 3;
+const int MUX_COL_C_PIN = 2;
+
+const int MUX_ROW_A_PIN = 7;
+const int MUX_ROW_B_PIN = 6;
+const int MUX_ROW_C_PIN = 5;
+const int ANA_PIN = 14; // The pin that the first analog mutex is connected to
+
+
 
 // The number of milliseconds to wait at the end of the loop
 const int WAIT_TIME = 100;

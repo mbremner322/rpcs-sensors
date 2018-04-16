@@ -14,4 +14,11 @@ IMU sensor
     vin -> vin
     adr -> gnd for 0x28 and vin for 0x29
     
-
+Pressure Map
+    mux_col_a_pin -> pin4
+    mux_col_b_pin -> pin3
+    mux_col_c_pin -> pin2
+    mux_row_a_pin -> pin7
+    mux_row_b_pin -> pin6
+    mux_row_c_pin -> pin5
+     
