@@ -1,28 +1,6 @@
-/*********************************************************************
- This is an example for our nRF51822 based Bluefruit LE modules
-
- Pick one up today in the adafruit shop!
-
- Adafruit invests time and resources providing this open source code,
- please support Adafruit and open-source hardware by purchasing
- products from Adafruit!
-
- MIT license, check LICENSE for more information
- All text above, and the splash screen below must be included in
- any redistribution
-*********************************************************************/
-
-#include <Arduino.h>
-#include <SPI.h>
-#include "Adafruit_BLE.h"
 #include "Adafruit_BluefruitLE_SPI.h"
-#include "Adafruit_BluefruitLE_UART.h"
-#include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BNO055.h>
-#include <utility/imumaths.h>
-
 #include "BluefruitConfig.h"
+#include <Adafruit_BNO055.h>
 
 #if SOFTWARE_SERIAL_AVAILABLE
   #include <SoftwareSerial.h>
@@ -64,10 +42,13 @@
     #define MODE_LED_BEHAVIOUR          "MODE"
 /*=========================================================================*/
 
-
+/*==========================GLOBALS========================================*/
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_SCK, BLUEFRUIT_SPI_MISO,
                              BLUEFRUIT_SPI_MOSI, BLUEFRUIT_SPI_CS,
                              BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
+Adafruit_BNO055 bno = Adafruit_BNO055();
+int count = 0;
+/*==========================GLOBALS========================================*/
 
 // A small helper
 void error(const __FlashStringHelper*err) {
@@ -75,21 +56,9 @@ void error(const __FlashStringHelper*err) {
   while (1);
 }
 
-/**************************************************************************/
-/*!
-    @brief  Sets up the HW an the BLE module (this function is called
-            automatically on startup)
-*/
-/**************************************************************************/
-Adafruit_BNO055 bno = Adafruit_BNO055();
-int count = 0;
 
-void setup(void)
-{
-
-  Serial.begin(9600);
-  Serial.println(F("Sensor Team IMU->BLE"));
-  Serial.println(F("------------------------------------------------"));
+void connect_to_ble(){
+  Serial.println(F("******************************"));
   
   /* Initialise the module */
   Serial.print(F("Initialising the Bluefruit LE module: "));
@@ -112,13 +81,9 @@ void setup(void)
   /* Disable command echo from Bluefruit */
   ble.echo(false);
 
-  Serial.println("Requesting Bluefruit info:");
+  Serial.println("Bluefruit info:");
   /* Print Bluefruit information */
   ble.info();
-
-  Serial.println(F("Please use Adafruit Bluefruit LE app to connect in UART mode"));
-  Serial.println(F("Then Enter characters to send to Bluefruit"));
-  Serial.println();
 
   ble.verbose(false);  // debug info is a little annoying after this point!
 
@@ -127,18 +92,24 @@ void setup(void)
       delay(500);
   }
 
-  Serial.println(F("******************************"));
-
-
   // Set module to DATA mode
   Serial.println( F("Switching to DATA mode!") );
   ble.setMode(BLUEFRUIT_MODE_DATA);
-
+  
   Serial.println(F("******************************"));
+}
 
+void setup(void)
+{
+
+  Serial.begin(9600);
+  Serial.println(F("Sensor Team IMU->BLE"));
+  Serial.println(F("------------------------------------------------"));
+  
+  connect_to_ble();
+  
     /* Initialise the sensor */
-  if(!bno.begin())
-  {
+  if(!bno.begin()) {
     /* There was a problem detecting the BNO055 ... check your connections */
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
     while(1);
@@ -158,32 +129,28 @@ void setup(void)
   Serial.println("Calibration status values: 0=uncalibrated, 3=fully calibrated");
 }
 
-/**************************************************************************/
-/*!
-    @brief  Constantly poll for new command or response data
-*/
-/**************************************************************************/
+
 void loop(void)
 {
   char buf[250];
-  // Send characters to Bluefruit
+  int sensor_id = 0;
+
+  /* Wait for connection */
+  while (! ble.isConnected()) {
+      Serial.println("Oops! Seems like BLE has disconnected...");
+      connect_to_ble();
+  }
 
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   
-  /* Display the floating point data */
-  Serial.print("X: ");
-  Serial.print(euler.x());
-  Serial.print(" Y: ");
-  Serial.print(euler.y());
-  Serial.print(" Z: ");
-  Serial.print(euler.z());
-  Serial.print("\t\t\n");
-  sprintf(buf, "{id=%d, {sensorid=, x=%f, y=%f, z=%f, temp=%d}, hum=0}\n", count, euler.x(), euler.y(), euler.z(), bno.getTemp());
+  sprintf(buf, "{id=%d, {sensorid=%d, x=%f, y=%f, z=%f}, temp=%d, hum=0}", 
+    count, sensor_id, euler.x(), euler.y(), euler.z(), bno.getTemp());
+  
+  Serial.println(buf);
 
   // Send input data to host via Bluefruit
-  ble.print(buf);
+  ble.println(buf);
   count++;
 
-  delay(750);
-
+  delay(1000);
 }
