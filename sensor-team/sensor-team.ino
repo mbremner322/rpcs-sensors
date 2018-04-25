@@ -1,6 +1,7 @@
 #include "Adafruit_BluefruitLE_SPI.h"
 #include "BluefruitConfig.h"
 #include <Adafruit_BNO055.h>
+#include <ArduinoJson.h>
 
 #if SOFTWARE_SERIAL_AVAILABLE
   #include <SoftwareSerial.h>
@@ -47,7 +48,8 @@ Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_SCK, BLUEFRUIT_SPI_MISO,
                              BLUEFRUIT_SPI_MOSI, BLUEFRUIT_SPI_CS,
                              BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 Adafruit_BNO055 bno = Adafruit_BNO055();
-int count = 0;
+int packet_id = 0;
+const int ble_buffer_size = 15;
 /*==========================GLOBALS========================================*/
 
 // A small helper
@@ -74,7 +76,7 @@ void connect_to_ble(){
     /* Perform a factory reset to make sure everything is in a known state */
     Serial.println(F("Performing a factory reset: "));
     if ( ! ble.factoryReset() ){
-      error(F("Couldn't factory reset"));
+      //error(F("Couldn't factory reset"));
     }
   }
 
@@ -101,6 +103,7 @@ void connect_to_ble(){
 
 void setup(void)
 {
+  while(!Serial);
 
   Serial.begin(9600);
   Serial.println(F("Sensor Team IMU->BLE"));
@@ -112,7 +115,7 @@ void setup(void)
   if(!bno.begin()) {
     /* There was a problem detecting the BNO055 ... check your connections */
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-    while(1);
+    //while(1);
   }
 
   delay(1000);
@@ -130,27 +133,63 @@ void setup(void)
 }
 
 
+void insert_imu_data(JsonObject& imu1, JsonObject& imu2){
+  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+  imu1["imu_id"] = 1;
+  imu1["x"] = 0.0;
+  imu1["y"] = 0.0;
+  imu1["z"] = 0.0;
+
+  imu2["imu_id"] = 2;
+  imu2["x"] = 0.0;
+  imu2["y"] = 0.0;
+  imu2["z"] = 0.0;
+}
+
+
 void loop(void)
 {
-  char buf[250];
-  int sensor_id = 0;
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
+  JsonObject& imu1 = jsonBuffer.createObject();
+  JsonObject& imu2 = jsonBuffer.createObject();
+  JsonArray& imu_array = root.createNestedArray("imu");
+  char json_buf[500];
+  int buf_len;
+  
 
   /* Wait for connection */
   while (! ble.isConnected()) {
-      Serial.println("Oops! Seems like BLE has disconnected...");
-      connect_to_ble();
   }
 
-  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-  
-  sprintf(buf, "{id=%d, {sensorid=%d, x=%f, y=%f, z=%f}, temp=%d, hum=0}", 
-    count, sensor_id, euler.x(), euler.y(), euler.z(), bno.getTemp());
-  
-  Serial.println(buf);
+  /* signal the beginning of this packet and flush the pipeline */
+  ble.print("*");
+  ble.flush();
 
-  // Send input data to host via Bluefruit
-  ble.println(buf);
-  count++;
+  /* construct json object */
+  root["id"] = packet_id++;
+  insert_imu_data(imu1, imu2);
+  imu_array.add(imu1);
+  imu_array.add(imu2);
+  root["temp"] = 0;
+  root["hum"] = 0;
+
+  /* stringify json */
+  root.printTo(json_buf);
+  buf_len = strlen(json_buf);
+
+  for (int i = 0; i < buf_len; i += ble_buffer_size){
+      char temp_buf[250];
+      
+      memcpy(temp_buf, json_buf+i, ble_buffer_size);
+      temp_buf[ble_buffer_size] = '\0';
+      
+      Serial.println(temp_buf);
+       
+      /* Send input data to host via Bluefruit */
+      ble.print(temp_buf);
+      ble.flush();
+  }
 
   delay(1000);
 }
