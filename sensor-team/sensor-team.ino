@@ -16,6 +16,7 @@ void connect_to_ble();
 void initialize_bnos();
 float get_imu_angle();
 void int_array_to_string(int &int_arr, char &str);
+void pressure_map_init();
 /*===============HELPER FUNCTION DECLARATIONS=====================*/
 
 
@@ -27,12 +28,59 @@ Adafruit_BNO055 bno1 = Adafruit_BNO055(55, 0x28);
 Adafruit_BNO055 bno2 = Adafruit_BNO055(56, 0x29);
 Adafruit_HTU21DF htu = Adafruit_HTU21DF();
 int packet_id = 0;
-const int ble_buffer_size = 15;
-const int pressure_size = 105;
+const int BLE_BUFFER_SIZE = 15;
+const int PRESSURE_SIZE = 105;
 int pressure_map_arr[105];
 char pressure_char_arr[105];
-/*==========================GLOBALS========================================*/
+const float UPPER_IMU_THRESH = 90.0;
+const float LOWER_IMU_THRESH = -90.0;
 
+
+/** PRESSURE MAP GLOBALS AND DESCRIPTION **/
+/**
+ * 8x8 pressure matrix test
+ * 
+ * This test verifies that multiplexers can be used to read a single pressure map point
+ * 
+ * Two multiplexers (MAX4617CPE) are connected to the feather M0 board. 
+ *  1) Mut ROW: Pin X is connected to analog input with a 10k pull up, 
+ *              pin A is connected to a digital input, 
+ *              pins X0-X7 are connected to the rows of the sensor
+ *  2) Mut COL: Pin X is connected to gnd,
+ *              Pin A is connected to a digital input
+ *              Pins X0-X7 are connected to the columns of the sensor
+ */
+//UNCOMMENT if teensy 3.5 
+const int MUX_COL_A_PIN = 4;
+const int MUX_COL_B_PIN = 3;
+const int MUX_COL_C_PIN = 2;
+
+const int MUX_ROW_A_PIN = 7;
+const int MUX_ROW_B_PIN = 6;
+const int MUX_ROW_C_PIN = 5;
+const int ANA_PIN = 14; // The pin that the first analog mutex is connected to
+
+// The number of milliseconds to wait at the end of the loop
+const int WAIT_TIME = 100;
+// The baud rate of the serial communication
+const int baud_rate = 9600;
+// The number of rows in the matrix
+const int NUM_PHYS_ROWS = 8;
+// The number of columns in the matrix
+const int NUM_PHYS_COLS = 8;
+
+// dimensions for the matrix 
+const int NUM_VIRT_ROWS = 15;
+const int NUM_VIRT_COLS = 7;
+
+// These macros compute whether the A, B, or C outputs to the muxes should be high or low
+// based on the desired mux selection
+#define GET_A_OUTPUT(x) ((x) & 0x1)
+#define GET_B_OUTPUT(x) (((x) & 0x2) >> 1)
+#define GET_C_OUTPUT(x) (((x) & 0x4) >> 2)
+
+
+/*==========================GLOBALS========================================*/
 
 void setup(void)
 {
@@ -42,11 +90,11 @@ void setup(void)
   Serial.println(F("Sensor Team IMU->BLE"));
   Serial.println(F("------------------------------------------------"));
   
-  connect_to_ble();
-
   initialize_bnos();
+  pressure_map_init();
+  connect_to_ble();
+  
 }
-
 
 
 void loop(void)
@@ -59,10 +107,10 @@ void loop(void)
 
   tick = millis();
   
-  
   /* Wait for connection */
   while (! ble.isConnected()) {
-    Serial.println("waiting for connection...");
+    Serial.print(".");
+    delay(100);
   }
 
   /* signal the beginning of this packet and flush the pipeline */
@@ -76,8 +124,8 @@ void loop(void)
   /* construct json object */
   root["id"] = packet_id++;
   root["imu_angle"] = get_imu_angle();
-  root["temp"] = htu.readTemperature();
-  root["hum"] = htu.readHumidity();
+  root["temp"] = 0.0;//htu.readTemperature();
+  root["hum"] = 0.0;//htu.readHumidity();
   root["pressure_array"] = pressure_char_arr;
 
   /* stringify json */
@@ -85,25 +133,24 @@ void loop(void)
   buf_len = strlen(json_buf);
   Serial.println(json_buf);
 
-  /* break up string into chunks of ble_buffer_size and send individually */
-  for (int i = 0; i < buf_len; i += ble_buffer_size){
-      char temp_buf[ble_buffer_size + 1];
+  /* break up string into chunks of BLE_BUFFER_SIZE and send individually */
+  for (int i = 0; i < buf_len; i += BLE_BUFFER_SIZE){
+      char temp_buf[BLE_BUFFER_SIZE + 1];
       
-      memcpy(temp_buf, json_buf+i, ble_buffer_size);
-      temp_buf[ble_buffer_size] = '\0';
-      
-      Serial.println(temp_buf);
-       
+      memcpy(temp_buf, json_buf+i, BLE_BUFFER_SIZE);
+      temp_buf[BLE_BUFFER_SIZE] = '\0';
+      //Serial.println(temp_buf);
       /* Send input data to host via Bluefruit */
       ble.print(temp_buf);
       ble.flush();
-      delay(100);
+      delay(250);
   }
 
    tock = millis();
    Serial.print("This iteration took ");
    Serial.print(tock - tick);
    Serial.println(" milliseconds");
+   Serial.println();
 }
 
 
@@ -113,20 +160,26 @@ void error(const __FlashStringHelper*err) {
   while (1);
 }
 
-void displaySensorDetails(Adafruit_BNO055 b)
-{
-  sensor_t sensor;
-  b.getSensor(&sensor);
-  Serial.println("------------------------------------");
-  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" xxx");
-  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" xxx");
-  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" xxx");
-  Serial.println("------------------------------------");
-  Serial.println("");
-  delay(500);
+void pressure_map_init(){
+    // Initialize all pins
+  pinMode(ANA_PIN, INPUT);
+  
+  pinMode(MUX_COL_A_PIN, OUTPUT);
+  pinMode(MUX_COL_B_PIN, OUTPUT);
+  pinMode(MUX_COL_C_PIN, OUTPUT);
+  
+  pinMode(MUX_ROW_A_PIN, OUTPUT);
+  pinMode(MUX_ROW_B_PIN, OUTPUT);
+  pinMode(MUX_ROW_C_PIN, OUTPUT);
+
+  // Make sure pin A inputs to both muxes are low so the sensor starts disconnected
+  digitalWrite(MUX_COL_A_PIN, LOW);
+  digitalWrite(MUX_COL_B_PIN, LOW);
+  digitalWrite(MUX_COL_C_PIN, LOW);
+  
+  digitalWrite(MUX_ROW_A_PIN, LOW);
+  digitalWrite(MUX_ROW_B_PIN, LOW);
+  digitalWrite(MUX_ROW_C_PIN, LOW);
 }
 
 void connect_to_ble(){
@@ -188,26 +241,85 @@ void initialize_bnos(){
   
   bno1.setExtCrystalUse(true);
   bno2.setExtCrystalUse(true);
+
+  displaySensorDetails(bno1);
+  displaySensorDetails(bno2);
 }
 
+void displaySensorDetails(Adafruit_BNO055 b)
+{
+  sensor_t sensor;
+  b.getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
+  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
+  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
+  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" xxx");
+  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" xxx");
+  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" xxx");
+  Serial.println("------------------------------------");
+  Serial.println("");
+  delay(500);
+}
+
+/** arithmetic to shift the z-orientation value to [-90, 90] **/
 float get_imu_angle(){
   sensors_event_t event1, event2;
+  float average, shifted;
+  
   bno1.getEvent(&event1);
   bno2.getEvent(&event2);
-  return ((float)event1.orientation.z + (float)event2.orientation.z) / 2.0;
+
+  average = ((float)event1.orientation.z + (float)event2.orientation.z) /2;
+  if (average < -90.0){
+    shifted = -average - 270;
+  }
+  else{
+    shifted = 90.0 - average;
+  }
+
+  /** apply thresholds **/
+  if (shifted > UPPER_IMU_THRESH){
+    shifted = UPPER_IMU_THRESH;
+  }
+  if (shifted < LOWER_IMU_THRESH){
+    shifted = LOWER_IMU_THRESH;
+  }
+  return shifted;
 }
 
-// str must be pressure_size bytes 
+/* str must be PRESSURE_SIZE bytes */
 void int_array_to_string(int *int_arr, char *char_arr){
-  for (int i = 0; i < pressure_size; i++){
-    char_arr[i] = (char)int_arr[i];
+  for (int i = 0; i < PRESSURE_SIZE; i++){
+    char_arr[i] = (char)(int_arr[i] + 65);
   }
 }
 
+/* generate 105 points between 0 and 50 using the 8x8 map */
 void get_pressure_array(int *A){
-  for (int i = 0; i < pressure_size; i++){
-    pressure_map_arr[i] = i % 100 + 48;
+    int reading;
+    
+    for (int c = 0; c < NUM_VIRT_COLS; c++) {
+    digitalWrite(MUX_COL_A_PIN, GET_A_OUTPUT(c % NUM_PHYS_COLS));
+    digitalWrite(MUX_COL_B_PIN, GET_B_OUTPUT(c % NUM_PHYS_COLS));
+    digitalWrite(MUX_COL_C_PIN, GET_C_OUTPUT(c % NUM_PHYS_COLS));
+    
+    for (int r = 0; r < NUM_VIRT_ROWS; r++) {
+      digitalWrite(MUX_ROW_A_PIN, GET_A_OUTPUT(r % NUM_PHYS_ROWS));
+      digitalWrite(MUX_ROW_B_PIN, GET_B_OUTPUT(r % NUM_PHYS_ROWS));
+      digitalWrite(MUX_ROW_C_PIN, GET_C_OUTPUT(r % NUM_PHYS_ROWS));
+
+      reading = analogRead(ANA_PIN);
+      reading = map(reading, 200, 500, 50, 0);
+      reading = constrain(reading, 0, 50);
+      
+      *A = reading;
+      A++;
+    }
   }
 }
+
+
+
 
 
