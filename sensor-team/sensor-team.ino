@@ -1,4 +1,5 @@
 #include "Adafruit_BluefruitLE_SPI.h"
+#include "Adafruit_HTU21DF.h"
 #include "BluefruitConfig.h"
 #include <Adafruit_BNO055.h>
 #include <ArduinoJson.h>
@@ -24,6 +25,7 @@ Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_SCK, BLUEFRUIT_SPI_MISO,
                              BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 Adafruit_BNO055 bno1 = Adafruit_BNO055(55, 0x28);
 Adafruit_BNO055 bno2 = Adafruit_BNO055(56, 0x29);
+Adafruit_HTU21DF htu = Adafruit_HTU21DF();
 int packet_id = 0;
 const int ble_buffer_size = 15;
 const int pressure_size = 105;
@@ -51,7 +53,6 @@ void loop(void)
 {
   DynamicJsonBuffer jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
-  //JsonArray& pressure_array = root.createNestedArray("pressure_array");
   char json_buf[1000];
   int buf_len;
   unsigned long tick, tock;
@@ -75,8 +76,8 @@ void loop(void)
   /* construct json object */
   root["id"] = packet_id++;
   root["imu_angle"] = get_imu_angle();
-  root["temp"] = 0;
-  root["hum"] = 0;
+  root["temp"] = htu.readTemperature();
+  root["hum"] = htu.readHumidity();
   root["pressure_array"] = pressure_char_arr;
 
   /* stringify json */
@@ -86,7 +87,7 @@ void loop(void)
 
   /* break up string into chunks of ble_buffer_size and send individually */
   for (int i = 0; i < buf_len; i += ble_buffer_size){
-      char temp_buf[250];
+      char temp_buf[ble_buffer_size + 1];
       
       memcpy(temp_buf, json_buf+i, ble_buffer_size);
       temp_buf[ble_buffer_size] = '\0';
@@ -96,7 +97,7 @@ void loop(void)
       /* Send input data to host via Bluefruit */
       ble.print(temp_buf);
       ble.flush();
-      delay(1000);
+      delay(100);
   }
 
    tock = millis();
