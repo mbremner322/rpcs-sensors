@@ -21,14 +21,16 @@ void pressure_map_init();
 
 
 /*==========================GLOBALS========================================*/
-Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_SCK, BLUEFRUIT_SPI_MISO,
+/**Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_SCK, BLUEFRUIT_SPI_MISO,
                              BLUEFRUIT_SPI_MOSI, BLUEFRUIT_SPI_CS,
-                             BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
+                             BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);**/
+Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 Adafruit_BNO055 bno1 = Adafruit_BNO055(55, 0x28);
 Adafruit_BNO055 bno2 = Adafruit_BNO055(56, 0x29);
 Adafruit_HTU21DF htu = Adafruit_HTU21DF();
-int packet_id = 0;
-const int BLE_BUFFER_SIZE = 15;
+
+const int BAUDRATE = 115200;
+const int BLE_BUFFER_SIZE = 22;
 const int PRESSURE_SIZE = 105;
 int pressure_map_arr[105];
 char pressure_char_arr[105];
@@ -50,7 +52,6 @@ const float LOWER_IMU_THRESH = -90.0;
  *              Pin A is connected to a digital input
  *              Pins X0-X7 are connected to the columns of the sensor
  */
-//UNCOMMENT if teensy 3.5 
 const int MUX_COL_A_PIN = 4;
 const int MUX_COL_B_PIN = 3;
 const int MUX_COL_C_PIN = 2;
@@ -58,18 +59,13 @@ const int MUX_COL_C_PIN = 2;
 const int MUX_ROW_A_PIN = 7;
 const int MUX_ROW_B_PIN = 6;
 const int MUX_ROW_C_PIN = 5;
-const int ANA_PIN = 14; // The pin that the first analog mutex is connected to
+const int ANA_PIN = 14; 
 
-// The number of milliseconds to wait at the end of the loop
-const int WAIT_TIME = 100;
-// The baud rate of the serial communication
-const int baud_rate = 9600;
-// The number of rows in the matrix
+// dimensions for the physical pressure map
 const int NUM_PHYS_ROWS = 8;
-// The number of columns in the matrix
 const int NUM_PHYS_COLS = 8;
 
-// dimensions for the matrix 
+// dimensions for the matrix this program generates
 const int NUM_VIRT_ROWS = 15;
 const int NUM_VIRT_COLS = 7;
 
@@ -79,13 +75,11 @@ const int NUM_VIRT_COLS = 7;
 #define GET_B_OUTPUT(x) (((x) & 0x2) >> 1)
 #define GET_C_OUTPUT(x) (((x) & 0x4) >> 2)
 
-
 /*==========================GLOBALS========================================*/
 
 void setup(void)
 {
-  while(!Serial);
-  Serial.begin(9600);
+  Serial.begin(BAUDRATE);
   
   Serial.println(F("Sensor Team IMU->BLE"));
   Serial.println(F("------------------------------------------------"));
@@ -93,7 +87,6 @@ void setup(void)
   initialize_bnos();
   pressure_map_init();
   connect_to_ble();
-  
 }
 
 
@@ -109,7 +102,6 @@ void loop(void)
   
   /* Wait for connection */
   while (! ble.isConnected()) {
-    Serial.print(".");
     delay(100);
   }
 
@@ -122,16 +114,17 @@ void loop(void)
   int_array_to_string(pressure_map_arr, pressure_char_arr);
 
   /* construct json object */
-  root["id"] = packet_id++;
-  root["imu_angle"] = get_imu_angle();
-  root["temp"] = 0.0;//htu.readTemperature();
-  root["hum"] = 0.0;//htu.readHumidity();
-  root["pressure_array"] = pressure_char_arr;
+  root["a"] = get_imu_angle();
+  root["t"] = 0.0;//htu.readTemperature();
+  root["h"] = 0.0;//htu.readHumidity();
+  root["p"] = pressure_char_arr;
 
   /* stringify json */
   root.printTo(json_buf);
   buf_len = strlen(json_buf);
-  Serial.println(json_buf);
+  //Serial.println(json_buf);
+
+  //Serial.println(buf_len);
 
   /* break up string into chunks of BLE_BUFFER_SIZE and send individually */
   for (int i = 0; i < buf_len; i += BLE_BUFFER_SIZE){
@@ -143,7 +136,7 @@ void loop(void)
       /* Send input data to host via Bluefruit */
       ble.print(temp_buf);
       ble.flush();
-      delay(250);
+      delay(210);
   }
 
    tock = millis();
@@ -310,7 +303,7 @@ void get_pressure_array(int *A){
       digitalWrite(MUX_ROW_C_PIN, GET_C_OUTPUT(r % NUM_PHYS_ROWS));
 
       reading = analogRead(ANA_PIN);
-      reading = map(reading, 200, 500, 50, 0);
+      reading = map(reading, 250, 500, 50, 0);
       reading = constrain(reading, 0, 50);
       
       *A = reading;
