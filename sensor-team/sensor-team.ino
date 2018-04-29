@@ -115,8 +115,8 @@ void loop(void)
 
   /* construct json object */
   root["a"] = get_imu_angle();
-  root["t"] = 0.0;//htu.readTemperature();
-  root["h"] = 0.0;//htu.readHumidity();
+  root["t"] = 32.0;//htu.readTemperature();
+  root["h"] = 28.0;//htu.readHumidity();
   root["p"] = pressure_char_arr;
 
   /* stringify json */
@@ -154,7 +154,7 @@ void error(const __FlashStringHelper*err) {
 }
 
 void pressure_map_init(){
-    // Initialize all pins
+  // Initialize all pins
   pinMode(ANA_PIN, INPUT);
   
   pinMode(MUX_COL_A_PIN, OUTPUT);
@@ -263,7 +263,7 @@ float get_imu_angle(){
   bno1.getEvent(&event1);
   bno2.getEvent(&event2);
 
-  average = ((float)event1.orientation.z + (float)event2.orientation.z) /2;
+  average = (event1.orientation.z + event2.orientation.z) /2;
   if (average < -90.0){
     shifted = -average - 270;
   }
@@ -271,14 +271,7 @@ float get_imu_angle(){
     shifted = 90.0 - average;
   }
 
-  /** apply thresholds **/
-  if (shifted > UPPER_IMU_THRESH){
-    shifted = UPPER_IMU_THRESH;
-  }
-  if (shifted < LOWER_IMU_THRESH){
-    shifted = LOWER_IMU_THRESH;
-  }
-  return shifted;
+  return constrain(shifted, LOWER_IMU_THRESH, UPPER_IMU_THRESH);
 }
 
 /* str must be PRESSURE_SIZE bytes */
@@ -293,26 +286,21 @@ void get_pressure_array(int *A){
     int reading;
     
     for (int c = 0; c < NUM_VIRT_COLS; c++) {
-    digitalWrite(MUX_COL_A_PIN, GET_A_OUTPUT(c % NUM_PHYS_COLS));
-    digitalWrite(MUX_COL_B_PIN, GET_B_OUTPUT(c % NUM_PHYS_COLS));
-    digitalWrite(MUX_COL_C_PIN, GET_C_OUTPUT(c % NUM_PHYS_COLS));
-    
-    for (int r = 0; r < NUM_VIRT_ROWS; r++) {
-      digitalWrite(MUX_ROW_A_PIN, GET_A_OUTPUT(r % NUM_PHYS_ROWS));
-      digitalWrite(MUX_ROW_B_PIN, GET_B_OUTPUT(r % NUM_PHYS_ROWS));
-      digitalWrite(MUX_ROW_C_PIN, GET_C_OUTPUT(r % NUM_PHYS_ROWS));
-
-      reading = analogRead(ANA_PIN);
-      reading = map(reading, 250, 500, 50, 0);
-      reading = constrain(reading, 0, 50);
+      digitalWrite(MUX_COL_A_PIN, GET_A_OUTPUT(c % NUM_PHYS_COLS));
+      digitalWrite(MUX_COL_B_PIN, GET_B_OUTPUT(c % NUM_PHYS_COLS));
+      digitalWrite(MUX_COL_C_PIN, GET_C_OUTPUT(c % NUM_PHYS_COLS));
       
-      *A = reading;
-      A++;
+      for (int r = 0; r < NUM_VIRT_ROWS; r++) {
+        digitalWrite(MUX_ROW_A_PIN, GET_A_OUTPUT(r % NUM_PHYS_ROWS));
+        digitalWrite(MUX_ROW_B_PIN, GET_B_OUTPUT(r % NUM_PHYS_ROWS));
+        digitalWrite(MUX_ROW_C_PIN, GET_C_OUTPUT(r % NUM_PHYS_ROWS));
+  
+        reading = analogRead(ANA_PIN);
+        reading = map(reading, 250, 500, 50, 0);
+        reading = constrain(reading, 0, 50);
+        
+        *A = reading;
+        A++;
+      }
     }
-  }
 }
-
-
-
-
-
