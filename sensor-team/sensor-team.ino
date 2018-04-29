@@ -5,6 +5,7 @@
  */
  
 #include "Adafruit_BluefruitLE_SPI.h"
+#include "Adafruit_BluefruitLE_UART.h"
 #include "Adafruit_HTU21DF.h"
 #include "BluefruitConfig.h"
 #include <Adafruit_BNO055.h>
@@ -27,9 +28,6 @@ void pressure_map_init();
 
 
 /*==========================GLOBALS========================================*/
-/**Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_SCK, BLUEFRUIT_SPI_MISO,
-                             BLUEFRUIT_SPI_MOSI, BLUEFRUIT_SPI_CS,
-                             BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);**/
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 Adafruit_BNO055 bno1 = Adafruit_BNO055(55, 0x28);
 Adafruit_BNO055 bno2 = Adafruit_BNO055(56, 0x29);
@@ -120,15 +118,15 @@ void loop(void)
   int_array_to_string(pressure_map_arr, pressure_char_arr);
 
   /* construct json object */
-  root["a"] = get_imu_angle();
-  root["t"] = 32.0;//htu.readTemperature();
-  root["h"] = 28.0;//htu.readHumidity();
+  root["a"] = round(get_imu_angle());
+  root["t"] = round((9 * htu.readTemperature() / 5) + 32);
+  root["h"] = round(htu.readHumidity());
   root["p"] = pressure_char_arr;
 
   /* stringify json */
   root.printTo(json_buf);
   buf_len = strlen(json_buf);
-  //Serial.println(json_buf);
+  Serial.println(json_buf);
   //Serial.println(buf_len);
 
   /* break up string into chunks of BLE_BUFFER_SIZE and send individually */
@@ -139,8 +137,8 @@ void loop(void)
       temp_buf[BLE_BUFFER_SIZE] = '\0';
       /* Send input data to host via Bluefruit */
       ble.print(temp_buf);
-      ble.flush();
-      delay(210);
+      //ble.flush();
+      delay(200);
   }
 
    tock = millis();
@@ -201,6 +199,8 @@ void connect_to_ble(){
         Serial.println("Factory Reset Failed");
     }
   }
+
+  //ble.sendCommandCheckOK("AR+BAUDRATE=28800");
 
   /* Disable command echo from Bluefruit */
   ble.echo(false);
@@ -302,7 +302,7 @@ void get_pressure_array(int *A){
         digitalWrite(MUX_ROW_C_PIN, GET_C_OUTPUT(r % NUM_PHYS_ROWS));
   
         reading = analogRead(ANA_PIN);
-        reading = map(reading, 250, 500, 50, 0);
+        reading = map(reading, 300, 500, 50, 0);
         reading = constrain(reading, 0, 50);
         
         *A = reading;
