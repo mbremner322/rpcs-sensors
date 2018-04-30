@@ -30,19 +30,19 @@
 
 
 
-const int MUX_COL_A_PIN = 4;
-const int MUX_COL_B_PIN = 3;
-const int MUX_COL_C_PIN = 2;
+const int MUX_COL_A_PIN = 17;
+const int MUX_COL_B_PIN = 22;
+const int MUX_COL_C_PIN = 23;
 
-const int MUX_ROW1_A_PIN = 7;
-const int MUX_ROW1_B_PIN = 6;
-const int MUX_ROW1_C_PIN = 5;
-const int MUX_ROW2_A_PIN = ;
-const int MUX_ROW2_B_PIN = ;
-const int MUX_ROW2_C_PIN = ;
+const int MUX_ROW1_A_PIN = 33;
+const int MUX_ROW1_B_PIN = 34;
+const int MUX_ROW1_C_PIN = 35;
+const int MUX_ROW2_A_PIN = 37;
+const int MUX_ROW2_B_PIN = 38;
+const int MUX_ROW2_C_PIN = 39;
 
-const int MUX_ROW1_EN_PIN = ;
-const int MUX_ROW2_EN_PIN = ;
+const int MUX_ROW1_EN_PIN = 36;
+const int MUX_ROW2_EN_PIN = 16;
 
 const int ANA_PIN = 14; // The pin that the first analog mutex is connected to
 
@@ -54,9 +54,9 @@ const int WAIT_TIME = 100;
 const int baud_rate = 9600;
 
 // The number of rows in the matrix
-const int NUM_ROWS = 8;
+const int NUM_ROWS = 15;
 // The number of columns in the matrix
-const int NUM_COLS = 8;
+const int NUM_COLS = 7;
 
 
 void setup() {
@@ -67,18 +67,25 @@ void setup() {
   pinMode(MUX_COL_B_PIN, OUTPUT);
   pinMode(MUX_COL_C_PIN, OUTPUT);
   
-  pinMode(MUX_ROW_A_PIN, OUTPUT);
-  pinMode(MUX_ROW_B_PIN, OUTPUT);
-  pinMode(MUX_ROW_C_PIN, OUTPUT);
-
+  pinMode(MUX_ROW1_A_PIN, OUTPUT);
+  pinMode(MUX_ROW1_B_PIN, OUTPUT);
+  pinMode(MUX_ROW1_C_PIN, OUTPUT);
+  pinMode(MUX_ROW2_A_PIN, OUTPUT);
+  pinMode(MUX_ROW2_B_PIN, OUTPUT);
+  pinMode(MUX_ROW2_C_PIN, OUTPUT);
+  
   // Make sure pin A inputs to both muxes are low so the sensor starts disconnected
   digitalWrite(MUX_COL_A_PIN, LOW);
   digitalWrite(MUX_COL_B_PIN, LOW);
   digitalWrite(MUX_COL_C_PIN, LOW);
   
-  digitalWrite(MUX_ROW_A_PIN, LOW);
-  digitalWrite(MUX_ROW_B_PIN, LOW);
-  digitalWrite(MUX_ROW_C_PIN, LOW);
+  digitalWrite(MUX_ROW1_A_PIN, LOW);
+  digitalWrite(MUX_ROW1_B_PIN, LOW);
+  digitalWrite(MUX_ROW1_C_PIN, LOW);
+  digitalWrite(MUX_ROW2_A_PIN, LOW);
+  digitalWrite(MUX_ROW2_B_PIN, LOW);
+  digitalWrite(MUX_ROW2_C_PIN, LOW);
+
 
   Serial.begin(baud_rate);
 

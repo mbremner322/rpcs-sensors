@@ -11,7 +11,7 @@ void setup() {
   // List all the available serial ports:
   printArray(Serial.list());
   // Open the port you are using at the rate you want:
-  myPort = new Serial(this, Serial.list()[1], 9600);
+  myPort = new Serial(this, Serial.list()[3], 9600);
 }
 
 void draw() {
@@ -22,15 +22,17 @@ void draw() {
     myPort.readBytesUntil(lf, inBuffer);
     if (inBuffer != null) {
       String data = new String(inBuffer);
+      //println(data);
       data = trim(data);
       int[] data_array = int(split(data, ','));
+      //println(data_array);
       if (data_array.length == NUM_POINTS) {
         int r;
         int c;
         float intensity;
         for(int i = 0; i < NUM_POINTS; i++) {
           c = i%15;
-          r = 6-i/15;
+          r = i/15;
           intensity = map((float)data_array[i], 200, 500, 0, 255);
           
           fill(intensity);
