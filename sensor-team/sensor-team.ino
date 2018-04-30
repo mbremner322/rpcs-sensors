@@ -1,7 +1,12 @@
-/** LIBRARY DEPENDENCIES 
- *  https://github.com/adafruit/Adafruit_BluefruitLE_nRF51
- *  https://github.com/adafruit/Adafruit_BNO055
- *  https://github.com/bblanchon/ArduinoJson
+/** HELPFUL LINKS FOR THIS TO WORK
+ *  
+ *  TEENSY 3.5 BOARD SETUP:
+ *     https://learn.adafruit.com/add-boards-arduino-v164/setup
+ *     https://learn.adafruit.com/adafruit-feather-m0-basic-proto/using-with-arduino-ide
+ *  LIBRARIES NEEDED:
+ *     https://github.com/adafruit/Adafruit_BluefruitLE_nRF51
+ *     https://github.com/adafruit/Adafruit_BNO055
+ *     https://github.com/bblanchon/ArduinoJson
  */
  
 #include "Adafruit_BluefruitLE_SPI.h"
@@ -15,19 +20,11 @@
   #include <SoftwareSerial.h>
 #endif
 
-
-/*===============HELPER FUNCTION DECLARATIONS=====================*/
-void error(const __FlashStringHelper*err);
-void displaySensorDetails(Adafruit_BNO055 b);
-void connect_to_ble();
-void initialize_bnos();
-float get_imu_angle();
-void int_array_to_string(int &int_arr, char &str);
-void pressure_map_init();
-/*===============HELPER FUNCTION DECLARATIONS=====================*/
+/*================DEBUG FLAGS================*/
+#define DEBUG_MODE 1
 
 
-/*==========================GLOBALS========================================*/
+/*==============GLOBALS===================*/
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 Adafruit_BNO055 bno1 = Adafruit_BNO055(55, 0x28);
 Adafruit_BNO055 bno2 = Adafruit_BNO055(56, 0x29);
@@ -78,8 +75,7 @@ const int NUM_VIRT_COLS = 7;
 #define GET_A_OUTPUT(x) ((x) & 0x1)
 #define GET_B_OUTPUT(x) (((x) & 0x2) >> 1)
 #define GET_C_OUTPUT(x) (((x) & 0x4) >> 2)
-
-/*==========================GLOBALS========================================*/
+/*==============GLOBALS===================*/
 
 void setup(void)
 {
@@ -88,9 +84,9 @@ void setup(void)
   Serial.println(F("Sensor Team IMU->BLE"));
   Serial.println(F("------------------------------------------------"));
   
-  initialize_bnos();
+  imu_init();
   pressure_map_init();
-  connect_to_ble();
+  ble_init();
 }
 
 
@@ -126,8 +122,10 @@ void loop(void)
   /* stringify json */
   root.printTo(json_buf);
   buf_len = strlen(json_buf);
+  
+#if DEBUG_MODE
   Serial.println(json_buf);
-  //Serial.println(buf_len);
+#endif
 
   /* break up string into chunks of BLE_BUFFER_SIZE and send individually */
   for (int i = 0; i < buf_len; i += BLE_BUFFER_SIZE){
@@ -137,25 +135,21 @@ void loop(void)
       temp_buf[BLE_BUFFER_SIZE] = '\0';
       /* Send input data to host via Bluefruit */
       ble.print(temp_buf);
-      //ble.flush();
       delay(200);
   }
 
+ #if DEBUG_MODE
    tock = millis();
-   Serial.print("This iteration took ");
    Serial.print(tock - tick);
    Serial.println(" milliseconds");
    Serial.println();
+ #endif
 }
 
 
 
 
 /** =========================== HELPER FUNCTIONS ============================ **/
-void error(const __FlashStringHelper*err) {
-  Serial.println(err);
-  while (1);
-}
 
 void pressure_map_init(){
   // Initialize all pins
@@ -179,7 +173,7 @@ void pressure_map_init(){
   digitalWrite(MUX_ROW_C_PIN, LOW);
 }
 
-void connect_to_ble(){
+void ble_init(){
   Serial.println(F("******************************"));
   
   /* Initialise the module */
@@ -199,8 +193,6 @@ void connect_to_ble(){
         Serial.println("Factory Reset Failed");
     }
   }
-
-  //ble.sendCommandCheckOK("AR+BAUDRATE=28800");
 
   /* Disable command echo from Bluefruit */
   ble.echo(false);
@@ -223,7 +215,7 @@ void connect_to_ble(){
   Serial.println(F("******************************"));
 }
 
-void initialize_bnos(){
+void imu_init(){
   /* Initialise the sensor */
   if(!bno1.begin()) {
     /* There was a problem detecting the BNO055 ... check your connections */
@@ -245,22 +237,6 @@ void initialize_bnos(){
   displaySensorDetails(bno2);
 }
 
-void displaySensorDetails(Adafruit_BNO055 b)
-{
-  sensor_t sensor;
-  b.getSensor(&sensor);
-  Serial.println("------------------------------------");
-  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" xxx");
-  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" xxx");
-  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" xxx");
-  Serial.println("------------------------------------");
-  Serial.println("");
-  delay(500);
-}
-
 /** arithmetic to shift the z-orientation value to [-90, 90] **/
 float get_imu_angle(){
   sensors_event_t event1, event2;
@@ -278,13 +254,6 @@ float get_imu_angle(){
   }
 
   return constrain(shifted, LOWER_IMU_THRESH, UPPER_IMU_THRESH);
-}
-
-/* str must be PRESSURE_SIZE bytes */
-void int_array_to_string(int *int_arr, char *char_arr){
-  for (int i = 0; i < PRESSURE_SIZE; i++){
-    char_arr[i] = (char)(int_arr[i] + 65);
-  }
 }
 
 /* generate 105 points between 0 and 50 using the 8x8 map */
@@ -309,4 +278,32 @@ void get_pressure_array(int *A){
         A++;
       }
     }
+}
+
+void error(const __FlashStringHelper*err) {
+  Serial.println(err);
+  while (1);
+}
+
+/* str must be PRESSURE_SIZE bytes */
+void int_array_to_string(int *int_arr, char *char_arr){
+  for (int i = 0; i < PRESSURE_SIZE; i++){
+    char_arr[i] = (char)(int_arr[i] + 65);
+  }
+}
+
+void displaySensorDetails(Adafruit_BNO055 b)
+{
+  sensor_t sensor;
+  b.getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
+  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
+  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
+  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" xxx");
+  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" xxx");
+  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" xxx");
+  Serial.println("------------------------------------");
+  Serial.println("");
+  delay(500);
 }
