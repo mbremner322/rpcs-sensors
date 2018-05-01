@@ -22,7 +22,7 @@
 #define GET_C_OUTPUT(x)  (((x) >> 2) & 0x1)
 // The enable pin is active low, and the chip should be enabled if there is a zero
 // in the 2^3 spot
-#define GET_EN1_OUTPUT(x) ((x) & 0x8)
+#define GET_EN1_OUTPUT(x) (!!((x) & 0x8))
 // The enable pin is active low, and the chip should be enabled if there is a one
 // in the 2^3 spot
 #define GET_EN2_OUTPUT(x) (!((x) & 0x8))
@@ -73,6 +73,9 @@ void setup() {
   pinMode(MUX_ROW2_A_PIN, OUTPUT);
   pinMode(MUX_ROW2_B_PIN, OUTPUT);
   pinMode(MUX_ROW2_C_PIN, OUTPUT);
+
+  pinMode(MUX_ROW1_EN_PIN, OUTPUT);
+  pinMode(MUX_ROW2_EN_PIN, OUTPUT);
   
   // Make sure pin A inputs to both muxes are low so the sensor starts disconnected
   digitalWrite(MUX_COL_A_PIN, LOW);
@@ -86,7 +89,9 @@ void setup() {
   digitalWrite(MUX_ROW2_B_PIN, LOW);
   digitalWrite(MUX_ROW2_C_PIN, LOW);
 
-
+  digitalWrite(MUX_ROW1_EN_PIN, LOW);
+  digitalWrite(MUX_ROW2_EN_PIN, LOW);
+  
   Serial.begin(baud_rate);
 
 }
@@ -108,6 +113,8 @@ void loop() {
 
       digitalWrite(MUX_ROW1_EN_PIN, GET_EN1_OUTPUT(r));
       digitalWrite(MUX_ROW2_EN_PIN, GET_EN2_OUTPUT(r));
+
+      //Serial.println("en1: " + String(GET_EN1_OUTPUT(r)) + " en2: " + String(GET_EN2_OUTPUT(r)));
 
       int reading = analogRead(ANA_PIN);
       Serial.print(reading);

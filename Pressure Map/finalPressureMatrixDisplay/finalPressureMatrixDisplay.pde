@@ -33,7 +33,7 @@ void draw() {
         for(int i = 0; i < NUM_POINTS; i++) {
           c = i%15;
           r = i/15;
-          intensity = map((float)data_array[i], 200, 500, 0, 255);
+          intensity = map((float)data_array[i], 300, 600, 0, 255);
           
           fill(intensity);
           rect(c*80, r*80, 80, 80); 
