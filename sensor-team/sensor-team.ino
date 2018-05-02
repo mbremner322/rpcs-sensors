@@ -169,8 +169,6 @@ void loop(void)
 }
 
 
-
-
 /** =========================== HELPER FUNCTIONS ============================ **/
 
 void pressure_map_init(){
@@ -322,10 +320,14 @@ void get_pressure_array(int *A, bool scale){
         }else{
           A[index] = min(A[index], reading);
         }
+#if DEBUG_MODE
         Serial.print(A[index]);
         Serial.print(",");
+#endif
       }
+#if DEBUG_MODE
       Serial.println();
+#endif
     }
     Serial.println();
 }
