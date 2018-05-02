@@ -14,10 +14,10 @@
     1. In Arduino IDE, choose Board "Teensy 3.5"
 
 # Libraries needed
-    * Bluetooth LE - Adafruit Bluefruit LE 
+    * Bluetooth LE Module - Adafruit BLE SPI Friend 
       https://github.com/adafruit/Adafruit_BluefruitLE_nRF51
-    * Accelerometer - Adafruit ADXL345
-      https://github.com/adafruit/Adafruit_ADXL345
     * IMU - Adafruit BNO055
       https://github.com/adafruit/Adafruit_BNO055
+    * Temperature / Humidity - HTU21D-F
+      https://github.com/adafruit/Adafruit_HTU21DF_Library
      
