@@ -99,7 +99,14 @@ void setup(void)
   
   imu_init();
   pressure_map_init();
+  for (int i = 0; i < PRESSURE_SIZE; i++){
+    pressure_offsets[i] = 1000;
+  }
   // at this point nothing should be touching the pressure map
+  get_pressure_array(pressure_offsets, false);
+  delay(500);
+  get_pressure_array(pressure_offsets, false);
+  delay(500);
   get_pressure_array(pressure_offsets, false);
   ble_init();
 }
@@ -285,7 +292,7 @@ float get_imu_angle(){
 
 /* generate 105 points between 0 and 50 using the 8x8 map */
 void get_pressure_array(int *A, bool scale){
-    int reading;
+    int reading, index;
     
     for (int c = 0; c < NUM_COLS; c++) {
       digitalWrite(MUX_COL_A_PIN, GET_A_OUTPUT(c));
@@ -303,18 +310,24 @@ void get_pressure_array(int *A, bool scale){
         digitalWrite(MUX_ROW1_EN_PIN, GET_EN1_OUTPUT(r));
         digitalWrite(MUX_ROW2_EN_PIN, GET_EN2_OUTPUT(r));
 
+        index = c * NUM_ROWS + r;
+
         reading = analogRead(ANA_PIN);
         if (scale){
-          reading = reading - pressure_offsets[c * NUM_COLS + r];
-          Serial.print(reading);
-          reading = map(reading, 0, 300, 50, 0);
+          reading = reading - pressure_offsets[index];
+          Serial.print("O = ");Serial.print(reading);Serial.print(" R =");
+          reading = map(reading, -40, 10, 50, 0);
           reading = constrain(reading, 0, 50);
+          A[index] = reading;
+        }else{
+          A[index] = min(A[index], reading);
         }
-
-        *A = reading;
-        A++;
+        Serial.print(A[index]);
+        Serial.print(",");
       }
+      Serial.println();
     }
+    Serial.println();
 }
 
 void error(const __FlashStringHelper*err) {
